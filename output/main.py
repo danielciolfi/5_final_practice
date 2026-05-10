@@ -11,7 +11,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from final_practice_guided.output.graph import build_graph
 
 
-def load_notion_tools() -> list:
+def load_fs_tools() -> list:
     import json
     import asyncio
 
@@ -25,18 +25,18 @@ def load_notion_tools() -> list:
     return asyncio.run(_load())
 
 
-def run(page_id: str) -> None:
-    notion_tools = load_notion_tools()
+def run(file_path: str) -> None:
+    fs_tools = load_fs_tools()
     graph = build_graph()
     thread = {
         "configurable": {
             "thread_id": str(uuid.uuid4()),
-            "notion_tools": notion_tools,
+            "fs_tools": fs_tools,
         }
     }
 
     initial = {
-        "page_id": page_id,
+        "file_path": file_path,
         "user_story": "",
         "draft_test_cases": "",
         "reviewed_test_cases": "",
@@ -48,7 +48,7 @@ def run(page_id: str) -> None:
         "retry_count": 0,
     }
 
-    print(f"\n{'='*60}\nProcessing Notion page: {page_id}\n{'='*60}")
+    print(f"\n{'='*60}\nProcessing file: {file_path}\n{'='*60}")
 
     try:
         for step in graph.stream(initial, config=thread, stream_mode="updates"):
@@ -72,8 +72,8 @@ def run(page_id: str) -> None:
 
 
 if __name__ == "__main__":
-    page_id = sys.argv[1] if len(sys.argv) > 1 else ""
-    if not page_id:
-        print("Usage: python main.py <notion-page-id>")
+    file_path = sys.argv[1] if len(sys.argv) > 1 else ""
+    if not file_path:
+        print("Usage: python main.py <path-to-user-story-file>")
         sys.exit(1)
-    run(page_id)
+    run(file_path)

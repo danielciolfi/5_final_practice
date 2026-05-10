@@ -17,30 +17,28 @@ def _call(system: str, user: str) -> str:
 
 def context_agent_node(state: QAState, config: dict) -> dict:
     """Agent 1 — owns: user_story"""
-    notion_tools = config["configurable"]["notion_tools"]
+    fs_tools = config["configurable"]["fs_tools"]
 
-    # Find the page-fetch tool: prefer names containing "retrieve" and "page",
-    # but exclude tools whose names imply creation or listing.
-    fetch_tool = None
-    for tool in notion_tools:
-        name = tool.name.lower()
-        if ("retrieve" in name or "get" in name) and "page" in name:
-            fetch_tool = tool
+    # Find the read_file tool
+    read_tool = None
+    for tool in fs_tools:
+        if "read_file" in tool.name.lower() or tool.name.lower() == "read_file":
+            read_tool = tool
             break
 
-    # Broader fallback: any tool with "retrieve" in its name
-    if fetch_tool is None:
-        for tool in notion_tools:
-            if "retrieve" in tool.name.lower():
-                fetch_tool = tool
+    # Broader fallback: any tool with "read" in its name
+    if read_tool is None:
+        for tool in fs_tools:
+            if "read" in tool.name.lower():
+                read_tool = tool
                 break
 
-    if fetch_tool is None:
+    if read_tool is None:
         raise ValueError(
-            f"Could not find a page-fetch tool. Available: {[t.name for t in notion_tools]}"
+            f"Could not find a read_file tool. Available: {[t.name for t in fs_tools]}"
         )
 
-    result = fetch_tool.invoke({"page_id": state["page_id"]})
+    result = read_tool.invoke({"path": state["file_path"]})
 
     # Normalise result to a plain string
     if hasattr(result, "content"):
@@ -152,58 +150,35 @@ def human_review_node(state: QAState) -> dict:
 # Publish Node
 # ---------------------------------------------------------------------------
 
-def _chunk_text(text: str, size: int = 2000) -> list[dict]:
-    """Split text into Notion paragraph blocks (max 2000 chars each)."""
-    blocks = []
-    for i in range(0, len(text), size):
-        chunk = text[i : i + size]
-        blocks.append(
-            {
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{"type": "text", "text": {"content": chunk}}]
-                },
-            }
-        )
-    return blocks
-
-
 def publish_node(state: QAState, config: dict) -> dict:
-    """Creates a child Notion page with the approved test cases."""
-    notion_tools = config["configurable"]["notion_tools"]
+    """Writes the approved test cases to a local output file."""
+    fs_tools = config["configurable"]["fs_tools"]
 
-    print(f"[publish_node] Available tools: {[t.name for t in notion_tools]}")
+    print(f"[publish_node] Available tools: {[t.name for t in fs_tools]}")
 
-    # Find the page-create tool
-    create_tool = None
-    for tool in notion_tools:
-        if "create" in tool.name.lower() and "page" in tool.name.lower():
-            create_tool = tool
+    # Find the write_file tool
+    write_tool = None
+    for tool in fs_tools:
+        if "write_file" in tool.name.lower() or tool.name.lower() == "write_file":
+            write_tool = tool
             break
 
-    # Broader fallback: any tool with "create" in its name
-    if create_tool is None:
-        for tool in notion_tools:
-            if "create" in tool.name.lower():
-                create_tool = tool
+    # Broader fallback: any tool with "write" in its name
+    if write_tool is None:
+        for tool in fs_tools:
+            if "write" in tool.name.lower():
+                write_tool = tool
                 break
 
-    if create_tool is None:
+    if write_tool is None:
         raise ValueError(
-            f"Could not find a page-create tool. Available: {[t.name for t in notion_tools]}"
+            f"Could not find a write_file tool. Available: {[t.name for t in fs_tools]}"
         )
 
-    content = state["reviewed_test_cases"]
-    children = _chunk_text(content)
-
-    create_tool.invoke(
+    write_tool.invoke(
         {
-            "parent": {"page_id": state["page_id"]},
-            "properties": {
-                "title": [{"text": {"content": "QA Test Cases"}}]
-            },
-            "children": children,
+            "path": "output_test_cases.md",
+            "content": state["reviewed_test_cases"],
         }
     )
 

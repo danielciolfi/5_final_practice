@@ -2,7 +2,7 @@ from typing import TypedDict
 
 
 class QAState(TypedDict):
-    page_id: str
+    file_path: str
     user_story: str
     draft_test_cases: str
     reviewed_test_cases: str
