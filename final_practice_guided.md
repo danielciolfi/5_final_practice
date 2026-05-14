@@ -162,7 +162,7 @@ class QAState(TypedDict):
 
 ## 4. Implement the three agent nodes in `nodes.py`
 
-Create `nodes.py`. All agents use `ChatAnthropic(model="claude-sonnet-4-5")`. Context Agent and Publish Node also use the Notion MCP tools from `config["configurable"]["notion_tools"]`.
+Create `nodes.py`. All agents use `ChatAnthropic(model="claude-sonnet-4-5")`. Context Agent and Publish Node also use the filesystem MCP tools from `config["configurable"]["fs_tools"]`.
 
 Start with shared imports and a helper:
 
@@ -396,7 +396,7 @@ def build_graph():
 Create `main.py`. It must:
 
 1. Load the `.env` file.
-2. Accept a Notion page ID as a command-line argument (e.g. `python main.py <page-id>`).
+2. Accept a file path as a command-line argument (e.g. `python main.py user_story.txt`).
 3. Load the filesystem MCP tools from `mcp_config.json` using `langchain_mcp_adapters`.
 4. Build the compiled graph.
 5. Create a unique `thread_id` per run.
